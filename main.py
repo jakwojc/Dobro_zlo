@@ -2,6 +2,7 @@ import pygame as pg
 import sys
 import math
 import numpy
+import pandas as pd
 
 def random_color():
     return pg.Color(numpy.random.randint(100,200),
@@ -13,9 +14,9 @@ def clamp (val,minv,maxv):
 
 pg.init()
 
-SCREEN_SIZE = 800
-GRID_SIZE = 20
-MUTATION_CHANCE = 0.02
+SCREEN_SIZE = 1000
+GRID_SIZE = 100
+MUTATION_CHANCE = 0.05
 MEDICINE_DELAY = 5
 
 WHITE = pg.Color(255,255,255)
@@ -26,6 +27,9 @@ screen = pg.display.set_mode((SCREEN_SIZE,SCREEN_SIZE),0)
 FPS = pg.time.Clock()
 
 diseases = []
+
+diseased_population = [0]
+cured_population = [0]
 
 class CellSprite(pg.sprite.Sprite):
     BORDER_WIDTH = 1
@@ -43,7 +47,7 @@ class CellSprite(pg.sprite.Sprite):
         self.rect.topleft = pos
         self.add(group)
         
-        self.font = pg.font.SysFont("Arial", 10)
+        # self.font = pg.font.SysFont("Arial", 10)
     
     def change_color(self,new_color):
         self.cell = pg.Surface((self.CELL_WIDTH - 2*self.BORDER_WIDTH,self.CELL_WIDTH - 2*self.BORDER_WIDTH))
@@ -65,16 +69,20 @@ class Cell():
     def update(self, new_state):
         self.state = new_state
         
+        
+        
         #print(self.state['disease'])
         
         if self.state['disease'] != 0:
             self.sprite.change_color(pg.Color(clamp(int(self.state['disease'] * 255),0,255),0,0))
+            diseased_population[-1] = diseased_population[-1] + 1
         elif self.state['cure'] != 0:
             self.sprite.change_color(CYAN)
+            cured_population[-1] = cured_population[-1] + 1
         else:
             self.sprite.change_color(WHITE)
             
-        self.sprite.draw_text(self.state['disease'], self.state['cure'])
+        # self.sprite.draw_text(self.state['disease'], self.state['cure'])
             
         
 
@@ -154,7 +162,7 @@ class Grid():
                     # za kazdym razem kiedy przenosi sie choroba jest szansa na mutacje
                     roll = numpy.random.rand()
                     if roll < MUTATION_CHANCE:
-                        print(roll,MUTATION_CHANCE)
+                        # print(roll,MUTATION_CHANCE)
                         state['disease'] = clamp(state['disease'] + 5/255*numpy.random.randn(),0.1,1)
                         diseases.append(Disease(self,(X,Y),state['disease']))
             # komorka moze sie wyleczyc z choroby jesli w sasiedztwie jest odpowiednie lekarstwo
@@ -214,11 +222,18 @@ grid = Grid()
 diseases.append(Disease(grid,(3,3),0.5))
 
 while True:
+    diseased_population.append(0)
+    cured_population.append(0)
     for event in pg.event.get():
         if event.type == pg.QUIT:
+            data = pd.DataFrame({
+                'count' : diseased_population
+                })
+            data.to_csv("data.csv")
             pg.quit()
             sys.exit()
-        # if event.type == pg.KEYDOWN:
+        if event.type == pg.KEYDOWN:
+            print(diseased_population[-2])
             
     grid.update()
     for d in diseases:
@@ -226,4 +241,4 @@ while True:
     screen.fill(pg.Color(100,0,0))
     grid.draw()
     pg.display.update()
-    FPS.tick(2)
+    FPS.tick(60)
