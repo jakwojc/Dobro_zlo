@@ -227,7 +227,8 @@ while True:
     for event in pg.event.get():
         if event.type == pg.QUIT:
             data = pd.DataFrame({
-                'count' : diseased_population
+                'diseased' : diseased_population[:-1],
+                'cured' : cured_population[:-1]
                 })
             data.to_csv("data.csv")
             pg.quit()
